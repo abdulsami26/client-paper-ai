@@ -1,8 +1,3 @@
-// 🔹 Changes:
-//  - Single chapter select (radio type behavior).
-//  - Topics linked to selected chapter.
-//  - Card for each chapter with its topics.
-
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -17,23 +12,17 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { useState } from "react"
 import { Button } from "./ui/button"
-import {EditIcon, TrashIcon } from "lucide-react"
 import { Checkbox } from "./ui/checkbox"
-import { Input } from "./ui/input"
-import { Card, CardTitle } from "./ui/card"
+import { X, ChevronDown, ChevronUp } from "lucide-react"
 
 const formSchema = z.object({
   class: z.string(),
   book: z.string(),
-  chapters: z.array(
+  chapters: z.array(z.string()),
+  topics: z.array(
     z.object({
-      name: z.string(),
-      topics: z.array(
-        z.object({
-          name: z.string(),
-          contents: z.array(z.string()),
-        })
-      ),
+      chapter: z.string(),
+      topic: z.string(),
     })
   ),
 })
@@ -45,13 +34,15 @@ const bookChapters: Record<string, string[]> = {
   computer: ["Programming Basics", "Data Structures", "Databases"],
 }
 
+const topicOptions = ["Definition", "Examples", "Derivation", "Numericals"]
+
 const Form = () => {
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null)
-  const [chaptersData, setChaptersData] = useState<
-    { name: string; topics: { name: string; contents: string[] }[] }[]
+  const [selectedChapters, setSelectedChapters] = useState<string[]>([])
+  const [selectedTopics, setSelectedTopics] = useState<
+    { chapter: string; topic: string }[]
   >([])
-  const [topicInput, setTopicInput] = useState("")
-  const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [activeChapter, setActiveChapter] = useState<string>("")
+  const [expandedChapters, setExpandedChapters] = useState<string[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,90 +50,49 @@ const Form = () => {
       class: "",
       book: "",
       chapters: [],
+      topics: [],
     },
   })
 
-  // handle chapter select (only 1 at a time)
-  const handleChapterSelect = (chapter: string) => {
-    setSelectedChapter(chapter)
-  }
-
-  // add or edit topic under selected chapter
-  const handleAddTopic = () => {
-    if (!topicInput.trim() || !selectedChapter) return
-
-    const updatedChapters = [...chaptersData]
-    const chapterIndex = updatedChapters.findIndex((c) => c.name === selectedChapter)
-
-    if (chapterIndex === -1) {
-      // new chapter with first topic
-      updatedChapters.push({
-        name: selectedChapter,
-        topics: [{ name: topicInput.trim(), contents: [] }],
-      })
+  // toggle chapter selection
+  const handleChapterToggle = (chapter: string, checked: boolean) => {
+    let updated = [...selectedChapters]
+    if (checked) {
+      updated.push(chapter)
     } else {
-      if (editIndex !== null) {
-        // edit topic
-        updatedChapters[chapterIndex].topics[editIndex].name = topicInput.trim()
-        setEditIndex(null)
-      } else {
-        // add topic
-        updatedChapters[chapterIndex].topics.push({ name: topicInput.trim(), contents: [] })
-      }
+      updated = updated.filter((c) => c !== chapter)
+      setSelectedTopics((prev) => prev.filter((t) => t.chapter !== chapter))
+      if (activeChapter === chapter) setActiveChapter("")
     }
-
-    setChaptersData(updatedChapters)
-    form.setValue("chapters", updatedChapters)
-    setTopicInput("")
+    setSelectedChapters(updated)
+    form.setValue("chapters", updated)
   }
 
-  // edit topic
-  const handleEditTopic = (chapterName: string, index: number) => {
-    setSelectedChapter(chapterName)
-    const chapter = chaptersData.find((c) => c.name === chapterName)
-    if (chapter) {
-      setTopicInput(chapter.topics[index].name)
-      setEditIndex(index)
+  const handleRemoveChapter = (chapter: string) => {
+    handleChapterToggle(chapter, false)
+  }
+
+  // toggle topic under chapter
+  const handleTopicToggle = (chapter: string, topic: string, checked: boolean) => {
+    let updated = [...selectedTopics]
+    if (checked) {
+      updated.push({ chapter, topic })
+    } else {
+      updated = updated.filter(
+        (t) => !(t.chapter === chapter && t.topic === topic)
+      )
     }
+    setSelectedTopics(updated)
+    form.setValue("topics", updated)
   }
 
-  // delete topic
-  const handleDeleteTopic = (chapterName: string, index: number) => {
-    const updatedChapters = chaptersData.map((c) =>
-      c.name === chapterName
-        ? { ...c, topics: c.topics.filter((_, i) => i !== index) }
-        : c
-    )
-    setChaptersData(updatedChapters)
-    form.setValue("chapters", updatedChapters)
-  }
-
-  // handle topic content change
-  const handleTopicContentChange = (
-    chapterName: string,
-    topicName: string,
-    content: string,
-    checked: boolean
-  ) => {
-    const updatedChapters = chaptersData.map((c) =>
-      c.name === chapterName
-        ? {
-            ...c,
-            topics: c.topics.map((t) =>
-              t.name === topicName
-                ? {
-                    ...t,
-                    contents: checked
-                      ? [...t.contents, content]
-                      : t.contents.filter((c) => c !== content),
-                  }
-                : t
-            ),
-          }
-        : c
-    )
-    setChaptersData(updatedChapters)
-    form.setValue("chapters", updatedChapters)
+  // expand/collapse
+  const toggleExpand = (chapter: string) => {
+    if (expandedChapters.includes(chapter)) {
+      setExpandedChapters(expandedChapters.filter((c) => c !== chapter))
+    } else {
+      setExpandedChapters([...expandedChapters, chapter])
+    }
   }
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
@@ -152,9 +102,7 @@ const Form = () => {
   return (
     <ShadForm {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <CardTitle className="text-xl font-bold">Select Content</CardTitle>
-
-        {/* Class Dropdown */}
+        {/* Step 1: Class */}
         <FormField
           control={form.control}
           name="class"
@@ -179,7 +127,7 @@ const Form = () => {
           )}
         />
 
-        {/* Book Dropdown */}
+        {/* Step 2: Book */}
         <FormField
           control={form.control}
           name="book"
@@ -190,9 +138,12 @@ const Form = () => {
                 <Select
                   onValueChange={(val) => {
                     field.onChange(val)
-                    setSelectedChapter(null)
-                    setChaptersData([])
+                    setSelectedChapters([])
+                    setSelectedTopics([])
+                    setActiveChapter("")
+                    setExpandedChapters([])
                     form.setValue("chapters", [])
+                    form.setValue("topics", [])
                   }}
                   defaultValue={field.value}
                 >
@@ -212,96 +163,116 @@ const Form = () => {
           )}
         />
 
-        {/* Single Chapter Selection */}
+        {/* Step 3: Chapters */}
         {form.watch("book") && (
           <div className="space-y-2">
-            <FormLabel>Chapter</FormLabel>
+            <FormLabel>Chapters</FormLabel>
+
+            {/* Chips */}
+            <div className="flex gap-2 flex-wrap mt-2">
+              {selectedChapters.map((chapter) => {
+                const isActive = activeChapter === chapter
+                return (
+                  <div
+                    key={chapter}
+                    onClick={() => setActiveChapter(chapter)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm cursor-pointer transition
+                    ${isActive ? "bg-blue-200 text-blue-800" : "bg-gray-200 text-gray-700"}`}
+                  >
+                    {chapter}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveChapter(chapter)
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Chapter list checkboxes */}
             <div className="grid grid-cols-2 gap-2">
               {bookChapters[form.watch("book")]?.map((chapter) => (
-                <Button
-                  key={chapter}
-                  type="button"
-                  variant={selectedChapter === chapter ? "default" : "outline"}
-                  onClick={() => handleChapterSelect(chapter)}
-                >
-                  {chapter}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Topics Section (only if a chapter selected) */}
-        {selectedChapter && (
-          <div className="space-y-4">
-            <FormLabel>Topics for {selectedChapter}</FormLabel>
-            <div className="flex gap-2">
-              <Input
-                value={topicInput}
-                onChange={(e) => setTopicInput(e.target.value)}
-                placeholder="Enter Topic Name"
-              />
-              <Button type="button" onClick={handleAddTopic}>
-                {editIndex !== null ? "Update" : "Add"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Chapters with Topics */}
-        <div className="space-y-4 max-h-80 overflow-y-auto">
-          {chaptersData.map((chapter) => (
-            <Card key={chapter.name} className="p-4">
-              <p className="font-bold mb-2">{chapter.name}</p>
-              {chapter.topics.map((topic, index) => (
-                <div key={topic.name} className="border p-2 rounded-md space-y-2 mb-2">
-                  <div className="flex justify-between items-center">
-                    <p className="font-medium">{topic.name}</p>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleEditTopic(chapter.name, index)}
-                      >
-                        <EditIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDeleteTopic(chapter.name, index)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Definition", "Examples", "Derivation", "Numericals"].map((opt) => (
-                      <div key={opt} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${chapter.name}-${topic.name}-${opt}`}
-                          checked={topic.contents.includes(opt)}
-                          onCheckedChange={(checked) =>
-                            handleTopicContentChange(chapter.name, topic.name, opt, checked as boolean)
-                          }
-                        />
-                        <label htmlFor={`${chapter.name}-${topic.name}-${opt}`} className="text-sm">
-                          {opt}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                <div key={chapter} className="flex items-center gap-2">
+                  <Checkbox
+                    id={chapter}
+                    checked={selectedChapters.includes(chapter)}
+                    onCheckedChange={(checked) =>
+                      handleChapterToggle(chapter, checked as boolean)
+                    }
+                  />
+                  <label htmlFor={chapter}>{chapter}</label>
                 </div>
               ))}
-            </Card>
-          ))}
-        </div>
+            </div>
+          </div>
+        )}
 
-        {/* <Button type="submit" className="bg-primary text-white">
-          Submit
-        </Button> */}
+        {/* Step 4: Active Chapter Topics */}
+        {activeChapter && (
+          <div className="border rounded p-4 space-y-2">
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => toggleExpand(activeChapter)}
+            >
+              <p className="font-bold">{activeChapter} - Topics</p>
+              {expandedChapters.includes(activeChapter) ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </div>
+
+            {expandedChapters.includes(activeChapter) && (
+              <div className="grid grid-cols-2 gap-2">
+                {topicOptions.map((topic) => (
+                  <div key={topic} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${activeChapter}-${topic}`}
+                      checked={selectedTopics.some(
+                        (t) => t.chapter === activeChapter && t.topic === topic
+                      )}
+                      onCheckedChange={(checked) =>
+                        handleTopicToggle(activeChapter, topic, checked as boolean)
+                      }
+                    />
+                    <label
+                      htmlFor={`${activeChapter}-${topic}`}
+                      className="text-sm"
+                    >
+                      {topic}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 5: Selected Topics */}
+        {selectedTopics.length > 0 && (
+          <div className="space-y-2">
+            <FormLabel>Selected Topics</FormLabel>
+            <div className="flex gap-2 flex-wrap">
+              {selectedTopics.map((t, idx) => (
+                <span
+                  key={idx}
+                  className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-sm"
+                >
+                  {t.chapter}: {t.topic}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Button type="submit" className="bg-primary text-white">
+          Next
+        </Button>
       </form>
     </ShadForm>
   )
