@@ -1,11 +1,13 @@
-import { SelectionForm } from "./screens/selection-form/form"
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { routes } from "./routes/route";
 
 
 function App() {
+  const router = createBrowserRouter(routes);
 
   return (
     <>
-      <SelectionForm/>
+      <RouterProvider router={router} />
     </>
   )
 }
