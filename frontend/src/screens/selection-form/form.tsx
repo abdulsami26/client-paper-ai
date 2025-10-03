@@ -9,8 +9,7 @@ export function SelectionForm() {
   const totalSteps = 6
   const [currentStep, setCurrentStep] = useState(1)
 
-  // 🔹 form context from StepForm (class, book, chapters etc.)
-  const form = useFormContext?.() // agar StepForm ke andar FormProvider use ho raha ho
+  const form = useFormContext?.()
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -26,7 +25,6 @@ export function SelectionForm() {
     }
   }
 
-  // 🔹 Validation conditions step wise
   const isNextDisabled = () => {
     if (!form) return false
     const values = form.getValues()

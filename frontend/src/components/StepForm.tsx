@@ -5,11 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form as ShadForm } from "./ui/form"
 import { useState } from "react"
-import { Button } from "./ui/button"
 import SelectionStep from "./SelectionStep"
-import OptionsStep from "./OptionsStep"
-import ConfirmationStep from "./ConfirmationStep"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog"
 
 type Topic = {
   chapter: string
@@ -27,7 +23,7 @@ const formSchema = z.object({
 
 const bookChapters = {
   physics: ["Laws of Motion", "Energy", "Waves", "Optics"],
-  chemistry: ["Atomic Structure", "Chemical Bonding", "Thermodynamics"],
+  chemistry: ["Atomic Structure", "Chemical Bonding", "Thermodynamics", "Electrochemistry", "Nuclear Chemistry", "Organic Chemistry"],
   maths: ["Algebra", "Calculus", "Geometry"],
   computer: ["Programming Basics", "Data Structures", "Databases"],
 }
@@ -39,10 +35,6 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([])
   const [expandedChapters, setExpandedChapters] = useState<string[]>([])
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({})
-  // const [selectedDifficulty, setSelectedDifficulty] = useState<string>("")
-  // const [selectedPaperType, setSelectedPaperType] = useState<string>("")
-  // const [expandedConfirmChapters, setExpandedConfirmChapters] = useState<string[]>([])
-  // const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [books, setBooks] = useState<string[]>(["Physics", "Chemistry", "Maths", "Computer"])
   const [chapters, setChapters] = useState<string[]>([])
 
@@ -57,15 +49,6 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
       paperType: "",
     },
   })
-
-  //   useEffect(() => {
-  //     // Sync form values with state
-  //     form.setValue("chapters", selectedChapters)
-  //     form.setValue("topics", selectedTopics)
-  //     form.setValue("difficulty", selectedDifficulty)
-  //     form.setValue("paperType", selectedPaperType)
-  //     console.log("isModalOpen changed to:", isModalOpen, "Current Step:", currentStep, "Form Valid:", form.formState.isValid)
-  //   }, [selectedChapters, selectedTopics, selectedDifficulty, selectedPaperType, currentStep, isModalOpen])
 
   const handleChapterToggle = (chapter: string, checked: boolean) => {
     let updated = [...selectedChapters]
@@ -112,21 +95,20 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
         className="space-y-8"
       >
 
-        {currentStep === 1 && (
-          <SelectionStep
-            form={form}
-            bookChapters={bookChapters}
-            selectedChapters={selectedChapters}
-            selectedTopics={selectedTopics}
-            expandedChapters={expandedChapters}
-            activeTabs={activeTabs}
-            handleChapterToggle={handleChapterToggle}
-            handleTopicToggle={handleTopicToggle}
-            topicOptions={topicOptions}
-            books={books}
-            currentStep={currentStep}
-          />
-        )}
+        <SelectionStep
+          form={form}
+          bookChapters={bookChapters}
+          selectedChapters={selectedChapters}
+          selectedTopics={selectedTopics}
+          expandedChapters={expandedChapters}
+          activeTabs={activeTabs}
+          handleChapterToggle={handleChapterToggle}
+          handleTopicToggle={handleTopicToggle}
+          topicOptions={topicOptions}
+          books={books}
+          currentStep={currentStep}
+        />
+
       </form>
     </ShadForm>
   )

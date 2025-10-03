@@ -4,6 +4,14 @@ import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { X, ChevronDown, ChevronUp } from "lucide-react"
 import { Label } from "./ui/label"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "./ui/carousel"
+import { useState } from "react"
 
 type SelectionStepProps = {
   form: any
@@ -30,6 +38,8 @@ const SelectionStep = ({
   books,
   currentStep,
 }: SelectionStepProps) => {
+
+  const [activeTab, setActiveTab] = useState<string | null>(null)
   return (
     <>
       {currentStep === 1 && (
@@ -97,9 +107,12 @@ const SelectionStep = ({
           {form.watch("book") && (
             <div>
               <FormLabel>Chapters</FormLabel>
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
                 {bookChapters[form.watch("book").toLowerCase()]?.map((chapter) => (
-                  <label key={chapter} className="flex items-center gap-2">
+                  <label
+                    key={chapter}
+                    className="flex items-center gap-2 border rounded-md px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
                     <Checkbox
                       checked={selectedChapters.includes(chapter)}
                       onCheckedChange={(checked) =>
@@ -111,8 +124,7 @@ const SelectionStep = ({
                 ))}
               </div>
 
-              {/* Selected chapters */}
-              {selectedChapters.length > 0 && (
+              {/* {selectedChapters.length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-4">
                   {selectedChapters.map((chapter) => (
                     <div
@@ -129,11 +141,96 @@ const SelectionStep = ({
                     </div>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
           )}
         </div>
       )}
+
+{currentStep === 3 && (
+  <div className="w-full">
+    <Carousel opts={{ align: "start" }} className="w-full">
+      <CarouselContent>
+        {selectedChapters.map((chapter: string) => {
+          const chapterTopics = selectedTopics.filter((t) => t.chapter === chapter)
+          return (
+            <CarouselItem
+              key={chapter}
+              className="basis-full md:basis-1/2 lg:basis-1/3"
+            >
+              <div className="border rounded-lg p-4 shadow-sm bg-white h-full flex flex-col">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-lg">{chapter} - Topics</p>
+                </div>
+
+                {/* Topic Options */}
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  {topicOptions.map((topic: string) => (
+                    <div key={topic} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`${chapter}-${topic}`}
+                        checked={selectedTopics.some(
+                          (t) => t.chapter === chapter && t.topic === topic
+                        )}
+                        onCheckedChange={(checked) =>
+                          handleTopicToggle(chapter, topic, checked as boolean)
+                        }
+                      />
+                      <Label
+                        htmlFor={`${chapter}-${topic}`}
+                        className="text-sm"
+                      >
+                        {topic}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Tabs Area */}
+                {chapterTopics.length > 0 && (
+                  <div className="mt-4 flex flex-col flex-grow">
+                    <div className="flex gap-2 border-b pb-2 overflow-x-auto">
+                      {topicOptions.map((tab: string) => {
+                        const isAllowed = chapterTopics.some((t) => t.topic === tab)
+                        return (
+                          <Button
+                            key={tab}
+                            type="button"
+                            size="sm"
+                            variant={activeTab === tab ? "default" : "outline"}
+                            disabled={!isAllowed}
+                            onClick={() => setActiveTab(tab)}
+                          >
+                            {tab}
+                          </Button>
+                        )
+                      })}
+                    </div>
+
+                    <div className="p-3 border rounded bg-gray-50 mt-3 flex-grow">
+                      {activeTab ? (
+                        <p className="text-sm text-gray-700">
+                          Showing <strong>{activeTab}</strong> content for{" "}
+                          <strong>{chapter}</strong>.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400">
+                          Select a tab to see content
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CarouselItem>
+          )
+        })}
+      </CarouselContent>
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  </div>
+)}
 
     </>
   )
