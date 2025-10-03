@@ -4,45 +4,49 @@ interface StriperProps {
 }
 
 const Striper = ({ currentStep, totalSteps }: StriperProps) => {
-  const steps = [
-    { label: "Selection", step: 1 },
-    { label: "Options", step: 2 },
-    { label: "Confirmation", step: 3 },
-  ]
+  const radius = 40
+  const strokeWidth = 8
+  const circumference = 2 * Math.PI * radius
+  const progress = (currentStep / totalSteps) * circumference
 
   return (
-    <div className="flex items-start justify-between mb-4">
-      {steps.map((step, index) => (
-        <div key={step.step} className="flex flex-col items-center space-y-2">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-              currentStep === step.step
-                ? "bg-black text-white"
-                : currentStep > step.step
-                ? "bg-gray-300 text-gray-700"
-                : "border border-gray-300 text-gray-500"
-            }`}
-          >
-            {step.step}
-          </div>
-          <span
-            className={`text-sm ${
-              currentStep >= step.step ? "text-gray-800" : "text-gray-400"
-            }`}
-          >
-            {step.label}
-          </span>
-          {index < totalSteps - 1 && (
-            <div className="flex-1 flex items-center justify-center h-4 mt-2">
-              <div
-                className={`w-full border-t ${
-                  currentStep > step.step ? "border-gray-800" : "border-gray-300"
-                }`}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="flex flex-col items-center justify-center">
+      <svg
+        className="transform -rotate-90"
+        width={100}
+        height={100}
+      >
+        {/* Background circle */}
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          stroke="#e5e7eb" // gray-200
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        {/* Progress circle */}
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          stroke="#6366f1" // violet-500
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - progress}
+          strokeLinecap="round"
+          className="transition-all duration-500 ease-in-out"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center">
+        <p className="text-lg font-bold text-violet-600">
+          {Math.round((currentStep / totalSteps) * 100)}%
+        </p>
+        <span className="text-xs text-gray-500">
+          Step {currentStep}/{totalSteps}
+        </span>
+      </div>
     </div>
   )
 }

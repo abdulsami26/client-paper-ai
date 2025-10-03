@@ -1,6 +1,5 @@
-import Layout from "@/screens/dashboard/layout";
-import SelectionForm from "@/screens/dashboard/selection-form/form";
 import Login from "@/screens/login/login";
+import SelectionForm from "@/screens/selection-form/form";
 
 
 export const routes = [
@@ -9,17 +8,7 @@ export const routes = [
         element: <Login />,
     },
     {
-        path: "/dashboard",
-        element: <Layout />,
-        children: [
-            {
-                path: "generate-paper",
-                element: <SelectionForm />,
-            },
-            {
-                path: "generate-paper",
-                element: <SelectionForm />,
-            }
-        ]
-    }
+        path: "/generate-paper",
+        element: <SelectionForm />,
+    },
 ]
