@@ -1,8 +1,7 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
-import { X, ChevronDown, ChevronUp } from "lucide-react"
+import { Eye } from "lucide-react"
 import { Label } from "./ui/label"
 import {
   Carousel,
@@ -12,9 +11,11 @@ import {
   CarouselPrevious,
 } from "./ui/carousel"
 import { useState } from "react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
+import OptionsStep from "./OptionsStep"
 
 type SelectionStepProps = {
-  form: any
+  form: any,
   bookChapters: Record<string, string[]>
   selectedChapters: string[]
   selectedTopics: { chapter: string; topic: string }[]
@@ -35,11 +36,11 @@ const SelectionStep = ({
   handleChapterToggle,
   handleTopicToggle,
   topicOptions,
-  books,
   currentStep,
 }: SelectionStepProps) => {
 
-  const [activeTab, setActiveTab] = useState<string | null>(null)
+  const [openModal, setOpenModal] = useState(false)
+  const [modalContent, setModalContent] = useState<{ chapter: string; topic: string } | null>(null)
   return (
     <>
       {currentStep === 1 && (
@@ -103,11 +104,11 @@ const SelectionStep = ({
         </div>
       )}
       {currentStep === 2 && (
-        <div>
+        <div className="w-full">
           {form.watch("book") && (
             <div>
               <FormLabel>Chapters</FormLabel>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
                 {bookChapters[form.watch("book").toLowerCase()]?.map((chapter) => (
                   <label
                     key={chapter}
@@ -119,118 +120,115 @@ const SelectionStep = ({
                         handleChapterToggle(chapter, Boolean(checked))
                       }
                     />
-                    <span>{chapter}</span>
+                    <span className="font-medium text-[14px]">{chapter}</span>
                   </label>
                 ))}
               </div>
-
-              {/* {selectedChapters.length > 0 && (
-                <div className="flex gap-2 flex-wrap mt-4">
-                  {selectedChapters.map((chapter) => (
-                    <div
-                      key={chapter}
-                      className="flex items-center gap-1 px-2 py-1 rounded-full text-sm bg-gray-200 text-gray-700"
-                    >
-                      {chapter}
-                      <button
-                        type="button"
-                        onClick={() => handleChapterToggle(chapter, false)}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )} */}
             </div>
           )}
         </div>
       )}
 
-{currentStep === 3 && (
-  <div className="w-full">
-    <Carousel opts={{ align: "start" }} className="w-full">
-      <CarouselContent>
-        {selectedChapters.map((chapter: string) => {
-          const chapterTopics = selectedTopics.filter((t) => t.chapter === chapter)
-          return (
-            <CarouselItem
-              key={chapter}
-              className="basis-full md:basis-1/2 lg:basis-1/3"
-            >
-              <div className="border rounded-lg p-4 shadow-sm bg-white h-full flex flex-col">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-lg">{chapter} - Topics</p>
-                </div>
+      {currentStep === 3 && (
+        <div className="w-full">
+          <Carousel opts={{ align: "start" }} className="w-full">
+            <CarouselContent>
+              {selectedChapters.map((chapter: string) => {
+                const handleViewContent = (chapter: string, topic: string) => {
+                  setModalContent({ chapter, topic })
+                  setOpenModal(true)
+                }
 
-                {/* Topic Options */}
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                  {topicOptions.map((topic: string) => (
-                    <div key={topic} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${chapter}-${topic}`}
-                        checked={selectedTopics.some(
-                          (t) => t.chapter === chapter && t.topic === topic
-                        )}
-                        onCheckedChange={(checked) =>
-                          handleTopicToggle(chapter, topic, checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor={`${chapter}-${topic}`}
-                        className="text-sm"
-                      >
-                        {topic}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+                return (
+                  <CarouselItem
+                    key={chapter}
+                    className="basis-full md:basis-1/2 lg:basis-1/3"
+                  >
+                    <div className="border rounded-lg p-4 shadow-sm bg-white h-full flex flex-col">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-lg">{chapter} - Topics</p>
+                      </div>
 
-                {/* Tabs Area */}
-                {chapterTopics.length > 0 && (
-                  <div className="mt-4 flex flex-col flex-grow">
-                    <div className="flex gap-2 border-b pb-2 overflow-x-auto">
-                      {topicOptions.map((tab: string) => {
-                        const isAllowed = chapterTopics.some((t) => t.topic === tab)
-                        return (
-                          <Button
-                            key={tab}
-                            type="button"
-                            size="sm"
-                            variant={activeTab === tab ? "default" : "outline"}
-                            disabled={!isAllowed}
-                            onClick={() => setActiveTab(tab)}
-                          >
-                            {tab}
-                          </Button>
-                        )
-                      })}
-                    </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                        {topicOptions.map((topic: string) => {
+                          const isSelected = selectedTopics.some(
+                            (t) => t.chapter === chapter && t.topic === topic
+                          )
+                          return (
+                            <div
+                              key={topic}
+                              className="flex items-center justify-between border rounded-md px-3 py-2 bg-gray-50 hover:bg-gray-100 transition"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`${chapter}-${topic}`}
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) =>
+                                    handleTopicToggle(chapter, topic, checked as boolean)
+                                  }
+                                />
+                                <Label
+                                  htmlFor={`${chapter}-${topic}`}
+                                  className="text-sm cursor-pointer"
+                                >
+                                  {topic}
+                                </Label>
+                              </div>
 
-                    <div className="p-3 border rounded bg-gray-50 mt-3 flex-grow">
-                      {activeTab ? (
-                        <p className="text-sm text-gray-700">
-                          Showing <strong>{activeTab}</strong> content for{" "}
-                          <strong>{chapter}</strong>.
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-400">
-                          Select a tab to see content
-                        </p>
-                      )}
+                              {isSelected && (
+                                <Eye
+                                  className="h-4 w-4 text-gray-600 cursor-pointer hover:text-black transition"
+                                  onClick={() => handleViewContent(chapter, topic)}
+                                />
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <Dialog open={openModal} onOpenChange={setOpenModal}>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>
+                              {modalContent ? `${modalContent.chapter} → ${modalContent.topic}` : "Topic Content"}
+                            </DialogTitle>
+                            <DialogDescription>
+                              {modalContent ? (
+                                <div className="mt-3 text-gray-700 leading-relaxed">
+                                  <p>
+                                    This is the generated AI content for the topic{" "}
+                                    <strong>{modalContent.topic}</strong> under the chapter{" "}
+                                    <strong>{modalContent.chapter}</strong>.
+                                    You can later replace this with actual data fetched from the API.
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-gray-500 italic">No topic selected yet.</p>
+                              )}
+                            </DialogDescription>
+
+                          </DialogHeader>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                  </div>
-                )}
-              </div>
-            </CarouselItem>
-          )
-        })}
-      </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
-    </Carousel>
-  </div>
-)}
+                  </CarouselItem>
+                )
+              })}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
+      )}
+
+      { currentStep === 4 && (
+        <OptionsStep
+          selectedDifficulty={form.watch("difficulty")}
+          selectedPaperType={form.watch("paperType")}
+          setSelectedDifficulty={(value) => form.setValue("difficulty", value)}
+          setSelectedPaperType={(value) => form.setValue("paperType", value)}
+        />
+      )}
 
     </>
   )
