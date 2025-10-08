@@ -1,0 +1,1 @@
+export const BASE_URL = "https://server-paper-ai2.vercel.app/api";
