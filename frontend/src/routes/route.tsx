@@ -1,5 +1,6 @@
 import Login from "@/screens/login/login";
 import SelectionForm from "@/screens/selection-form/form";
+import ProtectedRoute from "./protected-route";
 
 
 export const routes = [
@@ -9,6 +10,8 @@ export const routes = [
     },
     {
         path: "/generate-paper",
-        element: <SelectionForm />,
+        element: <ProtectedRoute>
+            <SelectionForm />
+        </ProtectedRoute>,
     },
 ]

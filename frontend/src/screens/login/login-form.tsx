@@ -1,19 +1,30 @@
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
-
 import { Card, CardContent } from "@/components/ui/card";
 import { useMutation } from "react-query";
 import { login } from "@/api/auth";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
+import Cookies from "js-cookie";
 
 export function LoginForm() {
   const navigate = useNavigate();
 
-  // Mutation setup (handles async login)
   const { mutateAsync, isLoading } = useMutation(login, {
-    onSuccess: () => {
-      toast.success("Login successful");
+    onSuccess: (user) => {
+
+      const tokenParts = user.session.split('.');
+      const decodedPayload = JSON.parse(atob(tokenParts[1]));
+      const expiryDate = new Date(decodedPayload.exp * 1000);
+      Cookies.set("session_token", user.session, { expires: expiryDate, secure: true });
+
+      localStorage.setItem("user", JSON.stringify({
+        name: user.name,
+        email: user.email,
+        // image: user.image,
+      }));
+
+      toast.success(`Welcome, ${user.name}!`);
       navigate("/generate-paper");
     },
     onError: (error) => {
@@ -22,7 +33,6 @@ export function LoginForm() {
     },
   });
 
-  // Google success callback
   const handleGoogleSuccess = useCallback(
     async (credentialResponse: CredentialResponse | null) => {
       const idToken = credentialResponse?.credential;
@@ -30,19 +40,23 @@ export function LoginForm() {
         toast.error("No token received from Google.");
         return;
       }
-
       await mutateAsync(idToken);
     },
     [mutateAsync]
   );
 
-  // Google error callback
   const handleGoogleError = useCallback(() => {
     toast.error("Google authentication failed.");
   }, []);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 relative">
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-white/70 backdrop-blur-xs z-50">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <Card className="border border-border/50 shadow-xl rounded-2xl">
         <CardContent className="p-8">
           <div className="flex flex-col gap-6">
@@ -51,12 +65,6 @@ export function LoginForm() {
               onError={handleGoogleError}
               useOneTap
             />
-
-            {isLoading && (
-              <p className="text-sm text-muted-foreground animate-pulse">
-                Authenticating...
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>

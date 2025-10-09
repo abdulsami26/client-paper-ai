@@ -4,8 +4,12 @@ import Striper from "@/components/striper"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { useFormContext } from "react-hook-form"
+import { googleLogout } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 export function SelectionForm() {
+  const navigate = useNavigate();
   const totalSteps = 6
   const [currentStep, setCurrentStep] = useState(1)
 
@@ -41,6 +45,22 @@ export function SelectionForm() {
     return false
   }
 
+  const handleLogout = () => {
+    googleLogout();
+
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie
+      .split(";")
+      .forEach(
+        (c) =>
+        (document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`))
+      );
+    navigate("/");
+    toast.success("You have been logged out successfully!");
+  };
   return (
     <div className="p-5 text-center">
       <div className="mb-8 max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl shadow-sm border gap-4 sm:gap-0">
@@ -68,7 +88,7 @@ export function SelectionForm() {
 
           {/* Logout Button */}
           <button
-            onClick={() => alert("Logout clicked")}
+            onClick={handleLogout}
             className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg shadow hover:bg-primary/90 transition-all"
           >
             Logout
