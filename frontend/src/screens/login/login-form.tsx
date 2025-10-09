@@ -1,7 +1,7 @@
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMutation } from "react-query";
-import { login } from "@/api/auth";
+import { login, type LoginResponse } from "@/api/auth";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
@@ -11,27 +11,31 @@ export function LoginForm() {
   const navigate = useNavigate();
 
   const { mutateAsync, isLoading } = useMutation(login, {
-    onSuccess: (user) => {
+    onSuccess: (data: LoginResponse) => {
+      const { user, token, expiresAt } = data;
 
-      const tokenParts = user.session.split('.');
-      const decodedPayload = JSON.parse(atob(tokenParts[1]));
-      const expiryDate = new Date(decodedPayload.exp * 1000);
-      Cookies.set("session_token", user.session, { expires: expiryDate, secure: true });
+      const expiryDate = new Date(expiresAt);
 
-      localStorage.setItem("user", JSON.stringify({
-        name: user.name,
-        email: user.email,
-        // image: user.image,
-      }));
+      Cookies.set("session_token", token, { expires: expiryDate, secure: true });
 
-      toast.success(`Welcome, ${user.name}!`);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          name: user.name,
+          email: user.email,
+          picture: user.picture,
+        })
+      );
+
       navigate("/generate-paper");
+      toast.success(`Welcome, ${user.name}!`);
     },
     onError: (error) => {
       console.error("Login failed:", error);
       toast.error("Login failed. Please try again.");
     },
   });
+
 
   const handleGoogleSuccess = useCallback(
     async (credentialResponse: CredentialResponse | null) => {

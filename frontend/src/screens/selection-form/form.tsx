@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import StepForm from "@/components/StepForm"
 import Striper from "@/components/striper"
 import { Button } from "@/components/ui/button"
@@ -12,8 +12,16 @@ export function SelectionForm() {
   const navigate = useNavigate();
   const totalSteps = 6
   const [currentStep, setCurrentStep] = useState(1)
+  const [user, setUser] = useState<{ name: string; email: string; picture?: string } | null>(null)
 
   const form = useFormContext?.()
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user")
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+  }, [])
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -61,32 +69,36 @@ export function SelectionForm() {
     navigate("/");
     toast.success("You have been logged out successfully!");
   };
+
   return (
     <div className="p-5 text-center">
       <div className="mb-8 max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl shadow-sm border gap-4 sm:gap-0">
-        {/* Left Side: Greeting */}
         <div className="text-center sm:text-left">
           <h2 className="text-lg font-semibold text-gray-800">
-            👋 Hello, <span className="text-primary">Waqar Rana</span>
+            👋 Hello, <span className="text-primary">{user?.name || "Guest"}</span>
           </h2>
-          <p className="text-sm text-gray-500">Hope you're having a productive day!</p>
+          <p className="text-sm text-gray-500">
+            Hope you're having a productive day!
+          </p>
         </div>
 
-        {/* Right Side: Profile + Logout */}
         <div className="flex items-center gap-4">
-          {/* Profile */}
           <div className="flex items-center gap-3">
-            <p className="font-medium text-gray-800 hidden sm:block">Waqar Rana</p>
+            <p className="font-medium text-gray-800 hidden sm:block">
+              {user?.name || "User"}
+            </p>
             <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/40 shadow-md transition-transform duration-300 hover:scale-105">
               <img
-                src="https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png"
+                src={
+                  user?.picture ||
+                  "https://png.pngtree.com/png-vector/20231019/ourmid/pngtree-user-profile-avatar-png-image_10211467.png"
+                }
                 alt="profile"
                 className="w-full h-full object-cover"
               />
             </div>
           </div>
 
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg shadow hover:bg-primary/90 transition-all"
@@ -95,8 +107,6 @@ export function SelectionForm() {
           </button>
         </div>
       </div>
-
-
 
       <Card className="w-full max-w-[1440px] mx-auto shadow-lg p-0">
         <div className="flex items-center justify-between w-full border-b p-6 bg-gray-100 rounded-tl-xl rounded-tr-xl">
