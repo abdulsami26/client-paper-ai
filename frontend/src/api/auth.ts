@@ -19,7 +19,7 @@ export type LoginResponse = {
 
 export const login = async (token: string): Promise<LoginResponse> => {
   const encodedToken = encodeToHexWithSpace({ "token": token });
-  const body = { "-": encodedToken }
+  const body = { "_": encodedToken }
   const headers = await generateRequestSignature(body, apiKey);
   const response = await axios.post(
     `${BASE_URL}/auth/sign-in`,
