@@ -1,6 +1,8 @@
 import axios from "axios";
 import { BASE_URL } from "@/constant/constant";
-import { encodeToHexWithSpace } from "@/middleware";
+import { encodeToHexWithSpace, generateRequestSignature } from "@/utility";
+
+const apiKey = import.meta.env.VITE_API_KEY;
 
 export type LoginResponse = {
   status: boolean,
@@ -17,17 +19,11 @@ export type LoginResponse = {
 
 export const login = async (token: string): Promise<LoginResponse> => {
   const encodedToken = encodeToHexWithSpace({ "token": token });
-
+  const body = { "-": encodedToken }
+  const headers = await generateRequestSignature(body, apiKey);
   const response = await axios.post(
     `${BASE_URL}/auth/sign-in`,
-    {
-      "_": encodedToken,
-    },
-    {
-      headers: {
-        "x-api-key": import.meta.env.VITE_API_KEY,
-      },
-    }
+    body, { headers: headers.headers }
   );
   return response.data;
 };
