@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import Cookies from "js-cookie";
+import { useAuth } from "@/hooks/useAuth";
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const { mutateAsync, isLoading } = useMutation(login, {
     onSuccess: (data: LoginResponse) => {
@@ -17,18 +19,11 @@ export function LoginForm() {
       const expiryDate = new Date(expiresAt);
 
       Cookies.set("session_token", token, { expires: expiryDate, secure: true });
+      localStorage.setItem("user", JSON.stringify(user));
+      setUser(user);
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          name: user.name,
-          email: user.email,
-          picture: user.picture,
-        })
-      );
-
-      navigate("/generate-paper");
       toast.success(`Welcome, ${user.name}!`);
+      navigate("/generate-paper");
     },
     onError: (error) => {
       console.error("Login failed:", error);

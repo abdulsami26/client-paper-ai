@@ -19,12 +19,12 @@ type SelectionStepProps = {
   bookChapters: Record<string, string[]>
   selectedChapters: string[]
   selectedTopics: { chapter: string; topic: string }[]
-  expandedChapters: string[]
+  // expandedChapters: string[]
   activeTabs: Record<string, string>
   handleChapterToggle: (chapter: string, checked: boolean) => void
   handleTopicToggle: (chapter: string, topic: string, checked: boolean) => void
   topicOptions: string[]
-  books: string[]
+  // books: string[]
   currentStep: number
 }
 

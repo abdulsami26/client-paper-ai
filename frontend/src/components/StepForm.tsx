@@ -33,10 +33,10 @@ const topicOptions = ["Definition", "Examples", "Derivation", "Numericals"]
 const StepForm = ({ currentStep }: { currentStep: number }) => {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([])
-  const [expandedChapters, setExpandedChapters] = useState<string[]>([])
+  // const [expandedChapters, setExpandedChapters] = useState<string[]>([])
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({})
-  const [books, setBooks] = useState<string[]>(["Physics", "Chemistry", "Maths", "Computer"])
-  const [chapters, setChapters] = useState<string[]>([])
+  // const [books, setBooks] = useState<string[]>(["Physics", "Chemistry", "Maths", "Computer"])
+  // const [chapters, setChapters] = useState<string[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -100,12 +100,12 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
           bookChapters={bookChapters}
           selectedChapters={selectedChapters}
           selectedTopics={selectedTopics}
-          expandedChapters={expandedChapters}
+          // expandedChapters={expandedChapters}
           activeTabs={activeTabs}
           handleChapterToggle={handleChapterToggle}
           handleTopicToggle={handleTopicToggle}
           topicOptions={topicOptions}
-          books={books}
+          // books={books}
           currentStep={currentStep}
         />
 
