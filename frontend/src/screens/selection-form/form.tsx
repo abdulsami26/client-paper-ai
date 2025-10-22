@@ -1,73 +1,71 @@
-import { useEffect, useState } from "react"
-import StepForm from "@/components/StepForm"
-import Striper from "@/components/striper"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { useFormContext } from "react-hook-form"
+import { useEffect, useState } from "react";
+import StepForm from "@/components/StepForm";
+import Striper from "@/components/striper";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { useFormContext } from "react-hook-form";
 import { googleLogout } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export function SelectionForm() {
   const navigate = useNavigate();
-  const totalSteps = 6
-  const [currentStep, setCurrentStep] = useState(1)
-  const [user, setUser] = useState<{ name: string; email: string; picture?: string } | null>(null)
-
-  const form = useFormContext?.()
+  const totalSteps = 6;
+  const [currentStep, setCurrentStep] = useState(1);
+  const { user, setUser } = useAuth();
+  const form = useFormContext?.();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user")
+    const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      setUser(JSON.parse(storedUser));
+    } else {
+      navigate("/");
     }
-  }, [])
+  }, [setUser, navigate]);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1)
+      setCurrentStep((prev) => prev + 1);
     } else {
-      console.log("📄 Generate Paper API call here...", form?.getValues())
+      console.log("📄 Generate Paper API call here...", form?.getValues());
     }
-  }
+  };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1)
+      setCurrentStep((prev) => prev - 1);
     }
-  }
+  };
 
   const isNextDisabled = () => {
-    if (!form) return false
-    const values = form.getValues()
+    if (!form) return false;
+    const values = form.getValues();
 
-    if (currentStep === 1) {
-      return !values.class || !values.book
-    }
-    if (currentStep === 2) {
-      return !values.chapters || values.chapters.length === 0
-    }
-    if (currentStep === 3) {
-      return !values.topics || values.topics.length === 0
-    }
-    return false
-  }
+    if (currentStep === 1) return !values.class || !values.book;
+    if (currentStep === 2) return !values.chapters || values.chapters.length === 0;
+    if (currentStep === 3) return !values.topics || values.topics.length === 0;
+    return false;
+  };
 
   const handleLogout = () => {
     googleLogout();
 
-    localStorage.clear();
+    localStorage.removeItem("user");
     sessionStorage.clear();
-    document.cookie
-      .split(";")
-      .forEach(
-        (c) =>
-        (document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`))
-      );
-    navigate("/");
+
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, `=;expires=${new Date(0).toUTCString()};path=/`);
+    });
+
+    setUser(null);
     toast.success("You have been logged out successfully!");
+    setTimeout(() => {
+      navigate("/");
+    }, 300);
   };
 
   return (
@@ -77,16 +75,12 @@ export function SelectionForm() {
           <h2 className="text-lg font-semibold text-gray-800">
             👋 Hello, <span className="text-primary">{user?.name || "Guest"}</span>
           </h2>
-          <p className="text-sm text-gray-500">
-            Hope you're having a productive day!
-          </p>
+          <p className="text-sm text-gray-500">Hope you're having a productive day!</p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <p className="font-medium text-gray-800 hidden sm:block">
-              {user?.name || "User"}
-            </p>
+            <p className="font-medium text-gray-800 hidden sm:block">{user?.name || "User"}</p>
             <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-primary/40 shadow-md transition-transform duration-300 hover:scale-105">
               <img
                 src={
@@ -145,7 +139,12 @@ export function SelectionForm() {
         </CardContent>
 
         <CardFooter className="flex justify-between border-t bg-gray-100 p-6">
-          <Button type="button" variant="outline" onClick={handleBack} disabled={currentStep === 1}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            disabled={currentStep === 1}
+          >
             Back
           </Button>
 
@@ -161,7 +160,7 @@ export function SelectionForm() {
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }
 
-export default SelectionForm
+export default SelectionForm;

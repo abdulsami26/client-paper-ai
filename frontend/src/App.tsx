@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { routes } from "./routes/route";
 import { QueryClient, QueryClientProvider } from "react-query";
+import { AuthProvider } from "@/context/AuthProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,9 +18,11 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </QueryClientProvider>
-  )
+  );
 }
 
 export default App
