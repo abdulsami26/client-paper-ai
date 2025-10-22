@@ -28,7 +28,7 @@ const bookChapters = {
   computer: ["Programming Basics", "Data Structures", "Databases"],
 }
 
-const topicOptions = ["Definition", "Examples", "Derivation", "Numericals"]
+const topicOptions = ["Definition", "Examples", "Derivation", "Numericals", "MCQs", "Previous Year Papers"]
 
 const StepForm = ({ currentStep }: { currentStep: number }) => {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([])
