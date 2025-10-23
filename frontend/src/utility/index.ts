@@ -6,29 +6,31 @@ export function encodeToHexWithSpace(body: object): string {
 }
 
 export async function generateRequestSignature(body: object, token: string) {
+    if (!token) {
+        throw new Error("Token (API key) is missing in generateRequestSignature");
+    }
+
     const timestamp = Date.now().toString();
     const bodyString = JSON.stringify(body);
-    const dataToSign = `${timestamp}:${bodyString}:${token}`;
+    const dataToSign = bodyString ? `${timestamp}:${bodyString}:${token}` : `${timestamp}:${token}`;
 
     const encoder = new TextEncoder();
     const keyData = encoder.encode(token);
     const data = encoder.encode(dataToSign);
 
-    return crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-        .then(key => crypto.subtle.sign("HMAC", key, data))
-        .then(signatureBuffer => {
-            const signature = Array.from(new Uint8Array(signatureBuffer))
-                .map(b => b.toString(16).padStart(2, "0"))
-                .join("");
+    const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
+    const signature = Array.from(new Uint8Array(signatureBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
 
-            return {
-                timestamp,
-                signature,
-                headers: {
-                    "x-timestamp": timestamp,
-                    "x-signature": signature,
-                    "x-api-key": token,
-                },
-            };
-        });
+    return {
+        timestamp,
+        signature,
+        headers: {
+            "x-timestamp": timestamp,
+            "x-signature": signature,
+            "x-api-key": token,
+        },
+    };
 }

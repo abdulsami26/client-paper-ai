@@ -7,6 +7,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 import OptionsStep from "./OptionsStep"
+import { useQuery } from "react-query"
+import { getAllClasses, getBooksByClassID } from "@/api/paper-content"
 
 type SelectionStepProps = {
   form: any
@@ -33,18 +35,21 @@ const SelectionStep = ({
   const [openModal, setOpenModal] = useState(false)
   const [modalContent, setModalContent] = useState<{ chapter: string; topic: string } | null>(null)
 
-  // const { mutateAsync, isLoading } = useMutation(getAllClasses, {
-  //   onSuccess: (data) => {
-  //     console.log(data)
-  //   },
-  //   onError: (error) => {
-  //     console.log(error)
-  //   },
-  // })
+  const {
+    data: classData,
+    isLoading: classLoading,
+    error: classError,
+  } = useQuery("classes", getAllClasses)
 
-  // useEffect(() => {
-  //   mutateAsync()
-  // }, [mutateAsync])
+  const selectedClass = form.watch("class")
+
+  const {
+    data: bookData,
+    isLoading: bookLoading,
+    error: bookError,
+  } = useQuery(["books", selectedClass], () => getBooksByClassID(Number(selectedClass)), {
+    enabled: !!selectedClass, 
+  })
 
   return (
     <>
@@ -65,17 +70,41 @@ const SelectionStep = ({
                       onValueChange={(val) => {
                         field.onChange(val);
                         form.setValue("class", val);
+                        form.setValue("book", "");
                       }}
                       defaultValue={field.value}
+                      disabled={classLoading || !!classError}
                     >
-                      <SelectTrigger className="w-full h-20 border-slate-300 bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all rounded-lg text-[15px] font-medium flex items-center justify-between px-4">
-                        <SelectValue placeholder="Select your class" />
+                      <SelectTrigger className="w-full h-20 border-slate-300 bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all rounded-lg text-[15px] font-medium flex items-center justify-between px-4 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <SelectValue
+                          placeholder={
+                            classLoading
+                              ? "Loading classes..."
+                              : classError
+                                ? "Failed to load classes"
+                                : "Select your class"
+                          }
+                        />
                       </SelectTrigger>
+
                       <SelectContent className="rounded-lg text-[16px]">
-                        <SelectItem value="class-9">Class 9</SelectItem>
-                        <SelectItem value="class-10">Class 10</SelectItem>
-                        <SelectItem value="class-11">Class 11</SelectItem>
-                        <SelectItem value="class-12">Class 12</SelectItem>
+                        {classLoading && (
+                          <div className="py-3 px-4 text-sm text-slate-600 text-center">
+                            Loading...
+                          </div>
+                        )}
+                        {classError as any && (
+                          <div className="py-3 px-4 text-sm text-red-600 text-center">
+                            Error loading classes
+                          </div>
+                        )}
+                        {!classLoading &&
+                          !classError &&
+                          classData?.classes?.map((item) => (
+                            <SelectItem key={item.id} value={item.id.toString()}>
+                              {item.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -99,16 +128,40 @@ const SelectionStep = ({
                         form.setValue("book", val);
                       }}
                       defaultValue={field.value}
-                      disabled={!form.watch("class")}
+                      disabled={!selectedClass || bookLoading || !!bookError}
                     >
                       <SelectTrigger className="w-full h-20 border-slate-300 bg-white hover:border-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all rounded-lg text-[15px] font-medium flex items-center justify-between px-4 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <SelectValue placeholder="Select a subject" />
+                        <SelectValue
+                          placeholder={
+                            !selectedClass
+                              ? "Select class first"
+                              : bookLoading
+                                ? "Loading subjects..."
+                                : bookError
+                                  ? "Failed to load subjects"
+                                  : "Select a subject"
+                          }
+                        />
                       </SelectTrigger>
+
                       <SelectContent className="rounded-lg text-[16px]">
-                        <SelectItem value="physics">Physics</SelectItem>
-                        <SelectItem value="chemistry">Chemistry</SelectItem>
-                        <SelectItem value="maths">Mathematics</SelectItem>
-                        <SelectItem value="computer">Computer Science</SelectItem>
+                        {bookLoading && (
+                          <div className="py-3 px-4 text-sm text-slate-600 text-center">
+                            Loading...
+                          </div>
+                        )}
+                        {bookError as any && (
+                          <div className="py-3 px-4 text-sm text-red-600 text-center">
+                            Error loading subjects
+                          </div>
+                        )}
+                        {!bookLoading &&
+                          !bookError &&
+                          bookData?.classesData?.[0]?.books?.map((book) => (
+                            <SelectItem key={book.id} value={book.id.toString()}>
+                              {book.title}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -116,6 +169,7 @@ const SelectionStep = ({
                 </FormItem>
               )}
             />
+
           </div>
         </div>
       )}

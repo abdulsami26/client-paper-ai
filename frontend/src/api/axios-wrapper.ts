@@ -4,9 +4,6 @@ import Cookies from "js-cookie";
 
 export const api = axios.create({
     baseURL: BASE_URL,
-    headers: {
-        "x-api-key": import.meta.env.VITE_API_KEY,
-    },
 });
 
 api.interceptors.request.use(
