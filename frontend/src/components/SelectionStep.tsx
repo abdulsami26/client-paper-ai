@@ -8,11 +8,10 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 import OptionsStep from "./OptionsStep"
 import { useQuery } from "react-query"
-import { getAllClasses, getBooksByClassID } from "@/api/paper-content"
+import { getAllClasses, getBooksByClassID, getChaptersByBookID } from "@/api/paper-content"
 
 type SelectionStepProps = {
   form: any
-  bookChapters: Record<string, string[]>
   selectedChapters: string[]
   selectedTopics: { chapter: string; topic: string }[]
   activeTabs: Record<string, string>
@@ -24,7 +23,6 @@ type SelectionStepProps = {
 
 const SelectionStep = ({
   form,
-  bookChapters,
   selectedChapters,
   selectedTopics,
   handleChapterToggle,
@@ -48,7 +46,15 @@ const SelectionStep = ({
     isLoading: bookLoading,
     error: bookError,
   } = useQuery(["books", selectedClass], () => getBooksByClassID(Number(selectedClass)), {
-    enabled: !!selectedClass, 
+    enabled: !!selectedClass,
+  })
+  const selectedBook = form.watch("book")
+  const {
+    data: chapterData,
+    isLoading: chapterLoading,
+    error: chapterError,
+  } = useQuery(["chapters", selectedBook], () => getChaptersByBookID(Number(selectedBook)), {
+    enabled: !!selectedBook,
   })
 
   return (
@@ -177,44 +183,58 @@ const SelectionStep = ({
       {currentStep === 2 && (
         <div className="w-full space-y-4">
           {form.watch("book") && (
-            <div className="h-[320px] md:h-[380px] flex flex-col pb-5">
+            <div className="flex flex-col pb-5">
               <div className="hidden md:block mb-2">
                 <FormLabel className="flex items-center gap-2 text-base font-semibold text-slate-900">
                   <BookOpen className="w-5 h-5 text-indigo-600" />
                   Select Chapters
                 </FormLabel>
               </div>
-
-              <div
-                className="flex-1 overflow-y-auto pr-2
-          grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3
-          scrollbar-thin scrollbar-thumb-indigo-400 scrollbar-track-gray-100
-          hover:scrollbar-thumb-indigo-500 rounded-lg transition-all duration-200"
-              >
-                {bookChapters[form.watch("book").toLowerCase()]?.map((chapter) => (
-                  <label
-                    key={chapter}
-                    className="flex items-center gap-3 border border-slate-200 rounded-lg px-4 py-3 bg-white 
-              hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md cursor-pointer 
-              transition-all duration-200 group"
-                  >
-                    <Checkbox
-                      checked={selectedChapters.includes(chapter)}
-                      onCheckedChange={(checked) =>
-                        handleChapterToggle(chapter, Boolean(checked))
-                      }
-                      className="border-slate-300 group-hover:border-indigo-500"
-                    />
-                    <span className="font-medium text-[15px] text-slate-700 group-hover:text-slate-900">
-                      {chapter}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              {chapterLoading ? (
+                <div className="flex-1 flex items-center justify-center text-slate-600 text-sm">
+                  Loading chapters...
+                </div>
+              ) : chapterError ? (
+                <div className="flex-1 flex items-center justify-center text-red-600 text-sm">
+                  Error loading chapters
+                </div>
+              ) : !chapterData?.bookData?.[0]?.chapters?.length ? (
+                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
+                  No chapters found for this book.
+                </div>
+              ) : (
+                <div
+                  className="flex-1 overflow-y-auto pr-2
+              grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3
+              scrollbar-thin scrollbar-thumb-indigo-400 scrollbar-track-gray-100
+              hover:scrollbar-thumb-indigo-500 rounded-lg transition-all duration-200"
+                >
+                  {chapterData.bookData[0].chapters.map((chapter) => (
+                    <label
+                      key={chapter.id}
+                      className="flex items-center gap-3 border border-slate-200 rounded-lg px-4 py-3 bg-white 
+                  hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md cursor-pointer 
+                  transition-all duration-200 group"
+                    >
+                      <Checkbox
+                        checked={selectedChapters.includes(chapter.title)}
+                        onCheckedChange={(checked) =>
+                          handleChapterToggle(chapter.title, Boolean(checked))
+                        }
+                        className="border-slate-300 group-hover:border-indigo-500"
+                      />
+                      <span className="line-clamp-1 font-medium text-[15px] text-slate-700 group-hover:text-slate-900">
+                        {chapter.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
+
 
       {currentStep === 3 && (
         <div className="w-full">
@@ -319,7 +339,7 @@ const SelectionStep = ({
 
       {currentStep === 4 && (
         <OptionsStep
-          selectedDifficulty={form.watch("difficulty")}
+          selectedDifficulty={form.watch("difficulty")} chapterData
           selectedPaperType={form.watch("paperType")}
           setSelectedDifficulty={(value) => form.setValue("difficulty", value)}
           setSelectedPaperType={(value) => form.setValue("paperType", value)}

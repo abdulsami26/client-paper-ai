@@ -21,22 +21,12 @@ const formSchema = z.object({
   paperType: z.string().optional(),
 })
 
-const bookChapters = {
-  physics: ["Laws of Motion", "Energy", "Waves", "Optics"],
-  chemistry: ["Atomic Structure", "Chemical Bonding", "Thermodynamics", "Electrochemistry", "Nuclear Chemistry", "Organic Chemistry"],
-  maths: ["Algebra", "Calculus", "Geometry"],
-  computer: ["Programming Basics", "Data Structures", "Databases"],
-}
-
 const topicOptions = ["Definition", "Examples", "Derivation", "Numericals", "MCQs", "Previous Year Papers"]
 
 const StepForm = ({ currentStep }: { currentStep: number }) => {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([])
-  // const [expandedChapters, setExpandedChapters] = useState<string[]>([])
   const [activeTabs, setActiveTabs] = useState<Record<string, string>>({})
-  // const [books, setBooks] = useState<string[]>(["Physics", "Chemistry", "Maths", "Computer"])
-  // const [chapters, setChapters] = useState<string[]>([])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -80,32 +70,29 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
     setSelectedTopics(updated)
   }
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("onSubmit triggered with data:", data, "Form Valid:", form.formState.isValid)
-    if (form.formState.isValid) {
-      console.log("Form is valid, modal not opened. Errors:", form.formState.errors)
-    }
-  }
+  // const onSubmit = (data: z.infer<typeof formSchema>) => {
+  //   console.log("onSubmit triggered with data:", data, "Form Valid:", form.formState.isValid)
+  //   if (form.formState.isValid) {
+  //     console.log("Form is valid, modal not opened. Errors:", form.formState.errors)
+  //   }
+  // }
 
 
   return (
     <ShadForm {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        // onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-8"
       >
 
         <SelectionStep
           form={form}
-          bookChapters={bookChapters}
           selectedChapters={selectedChapters}
           selectedTopics={selectedTopics}
-          // expandedChapters={expandedChapters}
           activeTabs={activeTabs}
           handleChapterToggle={handleChapterToggle}
           handleTopicToggle={handleTopicToggle}
           topicOptions={topicOptions}
-          // books={books}
           currentStep={currentStep}
         />
 
