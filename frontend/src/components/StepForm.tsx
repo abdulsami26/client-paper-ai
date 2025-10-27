@@ -1,35 +1,19 @@
-"use client"
-
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Form as ShadForm } from "./ui/form"
-import { useState } from "react"
 import SelectionStep from "./SelectionStep"
 
-type Topic = {
-  chapter: string
-  topic: string
+export interface FormData {
+  class: string
+  book: string
+  chapters: number[]
+  topics: { chapterID: number; topicID: number }[]
+  difficulty: string
+  paperType: string
 }
 
-const formSchema = z.object({
-  class: z.string().min(1, "Class is required"),
-  book: z.string().min(1, "Book is required"),
-  chapters: z.array(z.string()).min(1, "At least one chapter is required"),
-  topics: z.array(z.object({ chapter: z.string(), topic: z.string() })).min(1, "At least one topic is required"),
-  difficulty: z.string().optional(),
-  paperType: z.string().optional(),
-})
-
-const topicOptions = ["Definition", "Examples", "Derivation", "Numericals", "MCQs", "Previous Year Papers"]
-
 const StepForm = ({ currentStep }: { currentStep: number }) => {
-  const [selectedChapters, setSelectedChapters] = useState<string[]>([])
-  const [selectedTopics, setSelectedTopics] = useState<Topic[]>([])
-  const [activeTabs, setActiveTabs] = useState<Record<string, string>>({})
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormData>({
     defaultValues: {
       class: "",
       book: "",
@@ -40,35 +24,6 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
     },
   })
 
-  const handleChapterToggle = (chapter: string, checked: boolean) => {
-    let updated = [...selectedChapters]
-    if (checked) {
-      updated.push(chapter)
-    } else {
-      updated = updated.filter((c) => c !== chapter)
-      setSelectedTopics((prev) => prev.filter((t) => t.chapter !== chapter))
-      const tabsCopy = { ...activeTabs }
-      delete tabsCopy[chapter]
-      setActiveTabs(tabsCopy)
-    }
-    setSelectedChapters(updated)
-  }
-
-  const handleTopicToggle = (chapter: string, topic: string, checked: boolean) => {
-    let updated = [...selectedTopics]
-    if (checked) {
-      updated.push({ chapter, topic })
-      setActiveTabs((prev) => ({ ...prev, [chapter]: topic }))
-    } else {
-      updated = updated.filter((t) => !(t.chapter === chapter && t.topic === topic))
-      const chapterTopics = updated.filter((t) => t.chapter === chapter)
-      setActiveTabs((prev) => ({
-        ...prev,
-        [chapter]: chapterTopics.length > 0 ? chapterTopics[chapterTopics.length - 1].topic : "",
-      }))
-    }
-    setSelectedTopics(updated)
-  }
 
   // const onSubmit = (data: z.infer<typeof formSchema>) => {
   //   console.log("onSubmit triggered with data:", data, "Form Valid:", form.formState.isValid)
@@ -80,22 +35,8 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
 
   return (
     <ShadForm {...form}>
-      <form
-        // onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8"
-      >
-
-        <SelectionStep
-          form={form}
-          selectedChapters={selectedChapters}
-          selectedTopics={selectedTopics}
-          activeTabs={activeTabs}
-          handleChapterToggle={handleChapterToggle}
-          handleTopicToggle={handleTopicToggle}
-          topicOptions={topicOptions}
-          currentStep={currentStep}
-        />
-
+      <form className="space-y-8">
+        <SelectionStep form={form} currentStep={currentStep} />
       </form>
     </ShadForm>
   )

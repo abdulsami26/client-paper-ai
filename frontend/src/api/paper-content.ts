@@ -45,7 +45,6 @@ export type TopicsResponse = {
   chapterData: {
     id: number;
     title: string;
-    chapter_id: number;
     content: {
       id: number;
       title: string;
@@ -78,4 +77,3 @@ export const getTopicsByChapterID = async (chapterID: number): Promise<TopicsRes
   const response = (await api.get(`/public/chapter/${chapterID}`, { headers: headers.headers })) as TopicsResponse;
   return response;
 };
-
