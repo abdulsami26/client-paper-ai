@@ -21,17 +21,17 @@ const GeneratePaper = ({ form }: GeneratePaperProps) => {
     }
   });
 
-  // Build Paper Object
-  const finalObj = {
-    class: form.watch("class"),
-    book: form.watch("book"),
-    subject: form.watch("subject"),
-    chapters: form.watch("chapters"),
-    topics: form.watch("topics"),
-    difficulty: form.watch("difficulty").toUpperCase(),
-    paperType: form.watch("paperType"),
-  }
-  console.log(finalObj);
+//   // Build Paper Object
+//   const finalObj = {
+//     class: form.watch("class"),
+//     book: form.watch("book"),
+//     subject: form.watch("subject"),
+//     chapters: form.watch("chapters"),
+//     topics: form.watch("topics"),
+//     difficulty: form.watch("difficulty").toUpperCase(),
+//     paperType: form.watch("paperType"),
+//   }
+//   console.log(finalObj);
 
   function buildSectionA() {
     return {
