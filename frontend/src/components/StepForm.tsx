@@ -5,6 +5,7 @@ import SelectionStep from "./SelectionStep"
 export interface FormData {
   class: string
   book: string
+  subject: string
   chapters: number[]
   topics: { chapterID: number; topicID: number }[]
   difficulty: string
@@ -17,6 +18,7 @@ const StepForm = ({ currentStep }: { currentStep: number }) => {
     defaultValues: {
       class: "",
       book: "",
+      subject: "",
       chapters: [],
       topics: [],
       difficulty: "",

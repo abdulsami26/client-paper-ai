@@ -1,24 +1,21 @@
+
 import { FormLabel } from "./ui/form"
 import { Zap, FileText, BookMarked } from "lucide-react"
+import type { UseFormReturn } from "react-hook-form";
+import type { FormData } from "./StepForm";
+import { Button } from "./ui/button";
 
 type OptionsStepProps = {
-  selectedDifficulty: string
-  selectedPaperType: string
-  setSelectedDifficulty: (value: string) => void
-  setSelectedPaperType: (value: string) => void
+  form: UseFormReturn<FormData>;
 }
 
-const OptionsStep = ({
-  selectedDifficulty,
-  selectedPaperType,
-  setSelectedDifficulty,
-  setSelectedPaperType,
-}: OptionsStepProps) => {
+const OptionsStep = ({ form }: OptionsStepProps) => {
   const difficultyOptions = [
     { id: "easy", label: "Easy", icon: "🟢", description: "Basic concepts" },
     { id: "medium", label: "Medium", icon: "🟡", description: "Intermediate level" },
     { id: "hard", label: "Hard", icon: "🔴", description: "Advanced topics" },
   ]
+
 
   const paperTypeOptions = [
     {
@@ -49,15 +46,16 @@ const OptionsStep = ({
         {/* Scrollable container on mobile */}
         <div className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
           {difficultyOptions.map(({ id, label, icon, description }) => (
-            <button
+            <Button
+              type="button"
               key={id}
-              onClick={() => setSelectedDifficulty(label)}
-              className={`relative flex-shrink-0 w-[160px] sm:w-auto flex flex-col items-start gap-2 border-2 rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 group ${selectedDifficulty === label
+              onClick={() => form.setValue("difficulty", label)}
+              className={`relative flex-shrink-0 w-[160px] h-20 sm:w-auto flex flex-col items-start gap-2 border-2 rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 group ${form.watch("difficulty") === label
                   ? "border-indigo-500 bg-indigo-50 shadow-md"
                   : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 hover:shadow-sm"
                 }`}
             >
-              {selectedDifficulty === label && (
+              {form.watch("difficulty") === label && (
                 <div className="absolute top-2 right-2 w-4 h-4 sm:w-5 sm:h-5 bg-indigo-600 rounded-full flex items-center justify-center">
                   <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path
@@ -73,7 +71,7 @@ const OptionsStep = ({
                 <span className="font-semibold text-sm sm:text-base text-slate-900">{label}</span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-600">{description}</p>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -88,15 +86,16 @@ const OptionsStep = ({
         {/* Scrollable container on mobile */}
         <div className="flex sm:grid sm:grid-cols-2 gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
           {paperTypeOptions.map(({ id, label, value, icon: Icon, description }) => (
-            <button
+            <Button
+              type="button"
               key={id}
-              onClick={() => setSelectedPaperType(value)}
-              className={`relative flex-shrink-0 w-[180px] sm:w-auto flex flex-col items-start gap-2 border-2 rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 group ${selectedPaperType === value
+              onClick={() => form.setValue("paperType", value)}
+              className={`relative flex-shrink-0 w-[180px] h-20 sm:w-auto flex flex-col items-start gap-2 border-2 rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 group ${form.watch("paperType") === value
                   ? "border-indigo-500 bg-indigo-50 shadow-md"
                   : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50 hover:shadow-sm"
                 }`}
             >
-              {selectedPaperType === value && (
+              {form.watch("paperType") === value && (
                 <div className="absolute top-2 right-2 w-4 h-4 sm:w-5 sm:h-5 bg-indigo-600 rounded-full flex items-center justify-center">
                   <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path
@@ -112,7 +111,7 @@ const OptionsStep = ({
                 <span className="font-semibold text-sm sm:text-base text-slate-900">{label}</span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-600">{description}</p>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
