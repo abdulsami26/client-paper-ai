@@ -1,12 +1,29 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { AuthContext, type AuthContextType } from "./AuthContext";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { getMe } from "@/api/auth";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthContextType["user"]>(null);
   const [loading, setLoading] = useState(true);
+
+  const refreshCredits = useCallback(async () => {
+    try {
+      const res = await getMe();
+      if (res.status && res.user) {
+        setUser((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, credits: res.user.credits };
+          localStorage.setItem("user", JSON.stringify(next));
+          return next;
+        });
+      }
+    } catch {
+      // ignore — network/auth errors bubble elsewhere
+    }
+  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -14,10 +31,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
+      // Sync latest credits from server
+      refreshCredits();
     }
 
     setLoading(false);
-  }, []);
+  }, [refreshCredits]);
 
   if (loading) {
     return (
@@ -36,7 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser }}>
+    <AuthContext.Provider value={{ user, setUser, refreshCredits }}>
       {children}
     </AuthContext.Provider>
   );

@@ -30,8 +30,11 @@ export type PaperRoot = {
 };
 
 
-export const generatePaper = async (data: any): Promise<any> => {
+export const generatePaper = async (data: any): Promise<Blob> => {
     const headers = await generateRequestSignature({}, apiKey);
-    const response = (await api.post(`/ai/process`, data, { headers: headers.headers })) as any;
+    const response = (await api.post(`/ai/process`, data, {
+        headers: headers.headers,
+        responseType: "blob",
+    })) as unknown as Blob;
     return response;
 };

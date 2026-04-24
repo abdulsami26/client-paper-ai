@@ -1,20 +1,46 @@
 import { useEffect, useState } from "react"
 import Striper from "@/components/striper"
 import { Button } from "@/components/ui/button"
-import { useFormContext } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { googleLogout } from "@react-oauth/google"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
-import { LogOut, ChevronLeft, ChevronRight } from "lucide-react"
+import { LogOut, ChevronLeft, ChevronRight, Zap } from "lucide-react"
 import StepForm from "@/components/StepForm"
+import type { FormData } from "@/components/StepForm"
+
+export type GeneratePaperApi = {
+  generate: () => void
+  isLoading: boolean
+  ready: boolean
+}
 
 export function SelectionForm() {
   const navigate = useNavigate()
-  const totalSteps = 6
+  const totalSteps = 5
   const [currentStep, setCurrentStep] = useState(1)
   const { user, setUser } = useAuth()
-  const form = useFormContext?.()
+
+  const [genApi, setGenApi] = useState<GeneratePaperApi | null>(null)
+
+  const form = useForm<FormData>({
+    defaultValues: {
+      class: "",
+      book: "",
+      subject: "",
+      chapters: [],
+      topics: [],
+      difficulty: "",
+    },
+  })
+
+  // Watch values so validation re-evaluates reactively
+  const watchedClass = form.watch("class")
+  const watchedBook = form.watch("book")
+  const watchedChapters = form.watch("chapters")
+  const watchedTopics = form.watch("topics")
+  const watchedDifficulty = form.watch("difficulty")
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user")
@@ -28,8 +54,6 @@ export function SelectionForm() {
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1)
-    } else {
-      console.log("📄 Generate Paper API call here...", form?.getValues())
     }
   }
 
@@ -40,12 +64,14 @@ export function SelectionForm() {
   }
 
   const isNextDisabled = () => {
-    if (!form) return false
-    const values = form.getValues()
-
-    if (currentStep === 1) return !values.class || !values.book
-    if (currentStep === 2) return !values.chapters || values.chapters.length === 0
-    if (currentStep === 3) return !values.topics || values.topics.length === 0
+    if (currentStep === 1) return !watchedClass || !watchedBook
+    if (currentStep === 2) return !watchedChapters || watchedChapters.length === 0
+    if (currentStep === 3) {
+      if (!watchedTopics || watchedTopics.length === 0) return true
+      // Each selected topic must have at least one question type
+      return watchedTopics.some((t) => !t.is_qa || t.is_qa.length === 0)
+    }
+    if (currentStep === 4) return !watchedDifficulty
     return false
   }
 
@@ -67,17 +93,15 @@ export function SelectionForm() {
     "Class and Subject",
     "Chapter Selection",
     "Topic Selection",
-    "Difficulty Selection",
-    "Paper Type",
+    "Difficulty",
     "Generate Paper",
   ]
 
   const stepDescriptions = [
     "Select your class and subject",
     "Choose chapters to include",
-    "Pick topics to focus on",
-    "Set difficulty level",
-    "Choose paper format",
+    "Pick topics & question types",
+    "Set default difficulty",
     "Review and generate",
   ]
 
@@ -96,8 +120,9 @@ export function SelectionForm() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              <div className="hidden sm:flex items-center gap-2 lg:gap-3">
-                <p className="text-sm lg:text-base font-medium text-slate-700">{user?.name || "User"}</p>
+              <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-semibold px-2.5 py-1.5 rounded-full">
+                <Zap className="w-3.5 h-3.5" />
+                <span>{user?.credits ?? 0}</span>
               </div>
               <div className="w-9 h-9 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full overflow-hidden ring-2 ring-indigo-200 flex-shrink-0">
                 <img
@@ -123,36 +148,27 @@ export function SelectionForm() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-10 h-[calc(100vh-64px)]">
+      <main className="flex-1 px-0 sm:px-6 lg:px-8 py-0 sm:py-8 lg:py-10">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-slate-200 md:p-4 p-2">
-              <div className="flex gap-5 w-full">
-                <div className="flex-shrink-0">
-                  <Striper currentStep={currentStep} totalSteps={totalSteps} />
-                </div>
+          <div className="bg-white sm:rounded-xl shadow-md overflow-hidden sm:border border-slate-200">
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
+              <Striper currentStep={currentStep} totalSteps={totalSteps} />
 
-                <div className="flex w-full justify-center md:justify-end items-center">
-                  <div>
-
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">
-                      {stepTitles[currentStep - 1]}
-                    </h1>
-                    <p className="text-sm sm:text-base text-slate-600 mt-1 lg:mt-2">
-                      {stepDescriptions[currentStep - 1]}
-                    </p>
-                    {currentStep < totalSteps && (
-                      <p className="text-xs sm:text-sm text-indigo-600 font-medium mt-2 lg:mt-3">
-                        Next: {stepTitles[currentStep]}
-                      </p>
-                    )}
-                  </div>
-                </div>
+              <div className="mt-4 sm:mt-5">
+                <p className="text-[10px] sm:text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                  Step {currentStep} of {totalSteps}
+                </p>
+                <h1 className="text-lg sm:text-2xl font-bold text-slate-900 mt-1">
+                  {stepTitles[currentStep - 1]}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+                  {stepDescriptions[currentStep - 1]}
+                </p>
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 lg:p-8 h-[330px]">
-              <StepForm currentStep={currentStep} />
+            <div className="p-3 sm:p-6 lg:p-8 min-h-[330px]">
+              <StepForm currentStep={currentStep} form={form} onGenApiChange={setGenApi} />
             </div>
           </div>
         </div>
@@ -174,16 +190,7 @@ export function SelectionForm() {
 
             <div className="flex-1" />
 
-            {currentStep === totalSteps ? (
-              <Button
-                type="button"
-                onClick={handleNext}
-                className="flex-1 sm:flex-none gap-2 bg-indigo-600 hover:bg-indigo-700 h-10 sm:h-11 lg:h-12 text-sm sm:text-base"
-              >
-                <span>Generate Paper</span>
-                <ChevronRight className="w-4 h-4 flex-shrink-0" />
-              </Button>
-            ) : (
+            {currentStep < totalSteps ? (
               <Button
                 type="button"
                 onClick={handleNext}
@@ -191,6 +198,18 @@ export function SelectionForm() {
                 className="flex-1 sm:flex-none gap-2 bg-indigo-600 hover:bg-indigo-700 h-10 sm:h-11 lg:h-12 text-sm sm:text-base"
               >
                 <span>Next</span>
+                <ChevronRight className="w-4 h-4 flex-shrink-0" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => genApi?.generate()}
+                disabled={!genApi?.ready || !!genApi?.isLoading}
+                className="flex-1 sm:flex-none gap-2 bg-indigo-600 hover:bg-indigo-700 h-10 sm:h-11 lg:h-12 text-sm sm:text-base"
+              >
+                <span>
+                  {genApi?.isLoading ? "Generating..." : "Generate Paper"}
+                </span>
                 <ChevronRight className="w-4 h-4 flex-shrink-0" />
               </Button>
             )}

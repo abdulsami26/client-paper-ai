@@ -5,10 +5,10 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from ".
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "./ui/carousel";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Skeleton } from "./ui/skeleton";
-import { BookOpen, Layers, Eye } from "lucide-react";
+import { BookOpen, Layers, Eye, X, FileText } from "lucide-react";
 
 import OptionsStep from "./OptionsStep";
 import { getAllClasses, getBooksByClassID, getChaptersByBookID, getTopicsByChapterID } from "@/api/paper-content";
@@ -31,15 +31,19 @@ interface ChapterContent {
 
 interface ModalContent {
   chapterTitle: string;
+  topicTitle: string;
   content: Content[];
 }
+
+import type { GeneratePaperApi } from "@/screens/selection-form/form";
 
 type SelectionStepProps = {
   form: UseFormReturn<FormData>;
   currentStep: number;
+  onGenApiChange?: (api: GeneratePaperApi | null) => void;
 };
 
-const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
+const SelectionStep = ({ form, currentStep, onGenApiChange }: SelectionStepProps) => {
   const [openModal, setOpenModal] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent | null>(null);
 
@@ -78,35 +82,62 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
     }))
   );
 
-  // Toggle topics in form
+  // Toggle topic selection in form
   const handleTopicToggle = (chapterID: number, topicID: number, checked: boolean) => {
     const currentTopics = form.watch("topics") || [];
     if (checked) {
-      form.setValue("topics", [...currentTopics, { chapterID, topicID }]);
+      form.setValue("topics", [
+        ...currentTopics,
+        { chapterID, topicID, is_qa: ["MCQ"] },
+      ]);
     } else {
       form.setValue(
         "topics",
         currentTopics.filter(
-          (t: { chapterID: number; topicID: number }) =>
-            !(t.chapterID === chapterID && t.topicID === topicID)
+          (t) => !(t.chapterID === chapterID && t.topicID === topicID)
         )
       );
     }
   };
 
+  // Toggle a specific question type (MCQ/SHORT/LONG) for a topic — multi-select
+  const handleTopicTypeToggle = (
+    chapterID: number,
+    topicID: number,
+    type: "MCQ" | "SHORT" | "LONG"
+  ) => {
+    const currentTopics = form.watch("topics") || [];
+    form.setValue(
+      "topics",
+      currentTopics.map((t) => {
+        if (t.chapterID !== chapterID || t.topicID !== topicID) return t;
+        const has = t.is_qa.includes(type);
+        const next = has ? t.is_qa.filter((x) => x !== type) : [...t.is_qa, type];
+        // Ensure at least one type remains selected
+        return { ...t, is_qa: next.length === 0 ? t.is_qa : next };
+      })
+    );
+  };
+
+  const QA_TYPES: { key: "MCQ" | "SHORT" | "LONG"; label: string }[] = [
+    { key: "MCQ", label: "MCQ" },
+    { key: "SHORT", label: "QA" },
+    { key: "LONG", label: "LONG" },
+  ];
+
   return (
     <>
       {/* Step 1: Select Class & Book */}
       {currentStep === 1 && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-14">
+        <div className="w-full max-w-xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="class"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold text-slate-900">
-                    <BookOpen className="w-5 h-5 text-indigo-600" />
+                  <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
                     Class
                   </FormLabel>
                   <FormControl>
@@ -118,7 +149,7 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
                       defaultValue={field.value}
                       disabled={classLoading || !!classError}
                     >
-                      <SelectTrigger className="w-full h-20 border-slate-300 bg-white rounded-lg px-4 flex items-center justify-between disabled:opacity-60">
+                      <SelectTrigger className="w-full h-12 border-slate-200 bg-slate-50 rounded-xl px-4 disabled:opacity-60">
                         <SelectValue
                           placeholder={
                             classLoading
@@ -129,7 +160,7 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg text-[16px]">
+                      <SelectContent className="rounded-xl">
                         {classData?.classes?.map((item) => (
                           <SelectItem key={item.id} value={item.id.toString()}>
                             {item.name}
@@ -148,8 +179,8 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
               name="book"
               render={({ field }) => (
                 <FormItem className="space-y-2">
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold text-slate-900">
-                    <Layers className="w-5 h-5 text-indigo-600" />
+                  <FormLabel className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <Layers className="w-4 h-4 text-indigo-600" />
                     Subject
                   </FormLabel>
                   <FormControl>
@@ -162,7 +193,7 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
                       defaultValue={field.value}
                       disabled={!selectedClass || bookLoading || !!bookError}
                     >
-                      <SelectTrigger className="w-full h-20 border-slate-300 bg-white rounded-lg px-4 flex items-center justify-between disabled:opacity-50">
+                      <SelectTrigger className="w-full h-12 border-slate-200 bg-slate-50 rounded-xl px-4 disabled:opacity-50">
                         <SelectValue
                           placeholder={
                             !selectedClass
@@ -175,7 +206,7 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg text-[16px]">
+                      <SelectContent className="rounded-xl">
                         {bookData?.classesData?.[0]?.books?.map((book) => (
                           <SelectItem
                             key={book.id}
@@ -254,64 +285,97 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
 
                 return (
                   <CarouselItem key={chapterID} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                    <div className="border rounded-lg p-4 bg-white shadow-sm flex flex-col h-full">
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="font-bold text-slate-900">{chapterTitle}</p>
-                        <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+                    <div className="border rounded-lg p-3 sm:p-4 bg-white shadow-sm flex flex-col h-full">
+                      <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                        <p className="font-bold text-slate-900 text-sm sm:text-base truncate">{chapterTitle}</p>
+                        <span className="text-[10px] sm:text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full shrink-0">
                           Topics
                         </span>
                       </div>
 
                       {query.isLoading ? (
                         <div className="space-y-2">
-                          <Skeleton className="h-4 w-[250px]" />
-                          <Skeleton className="h-4 w-[200px]" />
-                          <Skeleton className="h-4 w-[250px]" />
+                          <Skeleton className="h-4 w-full max-w-[250px]" />
+                          <Skeleton className="h-4 w-full max-w-[200px]" />
+                          <Skeleton className="h-4 w-full max-w-[250px]" />
                         </div>
                       ) : query.error ? (
                         <p className="text-red-600 text-sm text-center py-6">Failed to load topics</p>
                       ) : (
-                        <ScrollArea className="max-h-56 rounded-md pr-2">
+                        <ScrollArea className="max-h-[60vh] sm:max-h-72 rounded-md pr-1 sm:pr-2">
                           <div className="space-y-2">
                             {topics.map((topic: ChapterContent) => {
                               const selectedTopics = form.watch("topics") || [];
-                              const isSelected = selectedTopics.some(
-                                (t: { chapterID: number; topicID: number }) =>
-                                  t.chapterID === chapterID && t.topicID === topic.id
+                              const selectedEntry = selectedTopics.find(
+                                (t) => t.chapterID === chapterID && t.topicID === topic.id
                               );
+                              const isSelected = !!selectedEntry;
+                              const activeTypes = selectedEntry?.is_qa || [];
 
                               return (
                                 <div
                                   key={topic.id}
-                                  className={`flex items-center justify-between border rounded-md px-3 py-2.5 ${isSelected
+                                  className={`flex flex-col gap-2 border rounded-md px-2.5 sm:px-3 py-2 sm:py-2.5 ${isSelected
                                     ? "bg-indigo-50 border-indigo-300 shadow-sm"
                                     : "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                                     }`}
                                 >
-                                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                  <div className="flex items-start gap-2">
                                     <Checkbox
                                       id={`${chapterTitle}-${topic.title}`}
                                       checked={isSelected}
                                       onCheckedChange={(checked) =>
                                         handleTopicToggle(chapterID, topic.id, checked as boolean)
                                       }
+                                      className="mt-0.5 shrink-0"
                                     />
                                     <Label
                                       htmlFor={`${chapterTitle}-${topic.title}`}
-                                      className="text-sm cursor-pointer text-slate-700 font-medium"
+                                      className="flex-1 min-w-0 text-xs sm:text-sm cursor-pointer text-slate-700 font-medium leading-snug break-words"
                                     >
-                                      {topic.title}
+                                      <span className="line-clamp-2">{topic.title}</span>
                                     </Label>
+
+                                    {isSelected && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setModalContent({ chapterTitle, topicTitle: topic.title, content: topic.content });
+                                          setOpenModal(true);
+                                        }}
+                                        className="shrink-0 p-1 -m-1 rounded hover:bg-indigo-100 text-indigo-600"
+                                        aria-label="View topic content"
+                                      >
+                                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                                      </button>
+                                    )}
                                   </div>
 
                                   {isSelected && (
-                                    <Eye
-                                      className="w-5 h-5 text-indigo-600 cursor-pointer"
-                                      onClick={() => {
-                                        setModalContent({ chapterTitle, content: topic.content });
-                                        setOpenModal(true);
-                                      }}
-                                    />
+                                    <div className="flex gap-1 flex-wrap pl-6">
+                                      {QA_TYPES.map((qt) => {
+                                        const active = activeTypes.includes(qt.key);
+                                        const isOnly = active && activeTypes.length === 1;
+                                        return (
+                                          <button
+                                            key={qt.key}
+                                            type="button"
+                                            onClick={() =>
+                                              handleTopicTypeToggle(chapterID, topic.id, qt.key)
+                                            }
+                                            disabled={isOnly}
+                                            title={isOnly ? "At least one type must stay selected" : ""}
+                                            className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-semibold border transition ${
+                                              active
+                                                ? "bg-indigo-600 text-white border-indigo-600"
+                                                : "bg-white text-slate-600 border-slate-300 hover:border-indigo-400"
+                                            } ${isOnly ? "opacity-80 cursor-not-allowed" : ""}`}
+                                          >
+                                            {qt.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
                                   )}
                                 </div>
                               );
@@ -331,25 +395,60 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
 
           {/* Topic Content Modal */}
           <Dialog open={openModal} onOpenChange={setOpenModal}>
-            <DialogContent className="max-w-md rounded-lg p-0">
-              <ScrollArea className="max-h-[80vh] p-5">
-                {modalContent?.content?.length ? (
-                  modalContent.content.map((content, index) => (
-                    <DialogHeader key={index} className="mb-4">
-                      <DialogTitle className="text-lg font-bold text-slate-900">
-                        {`${modalContent.chapterTitle} → ${content.title}`}
+            <DialogContent className="max-w-2xl p-0 rounded-2xl overflow-hidden sm:max-h-[85vh]">
+              <DialogHeader className="px-5 py-4 border-b border-slate-100">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <DialogTitle className="text-base font-semibold text-slate-900 truncate">
+                        {modalContent?.topicTitle || "Topic Content"}
                       </DialogTitle>
-                      <DialogDescription className="text-sm text-slate-600">
-                        <div className="mt-3 text-slate-700 leading-relaxed">{content.content}</div>
-                      </DialogDescription>
-                    </DialogHeader>
-                  ))
-                ) : (
-                  <DialogHeader>
-                    <DialogTitle className="text-lg font-bold text-slate-900">Topic Content</DialogTitle>
-                    <DialogDescription className="text-slate-500 italic">No topic selected yet.</DialogDescription>
-                  </DialogHeader>
-                )}
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {modalContent?.chapterTitle || ""}
+                        {modalContent?.content?.length
+                          ? ` · ${modalContent.content.length} block${
+                              modalContent.content.length === 1 ? "" : "s"
+                            }`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpenModal(false)}
+                    className="p-1.5 -m-1.5 rounded-lg hover:bg-slate-100 text-slate-500 shrink-0"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </DialogHeader>
+
+              <ScrollArea className="max-h-[70vh]">
+                <div className="flex flex-col gap-3 p-4 sm:p-5">
+                  {modalContent?.content?.length ? (
+                    modalContent.content.map((c) => (
+                      <div
+                        key={c.id}
+                        className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm"
+                      >
+                        <p className="text-xs font-semibold text-indigo-600 mb-2">
+                          {c.title}
+                        </p>
+                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {c.content}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500 italic text-center py-10">
+                      No content blocks available.
+                    </p>
+                  )}
+                </div>
               </ScrollArea>
             </DialogContent>
           </Dialog>
@@ -362,7 +461,7 @@ const SelectionStep = ({ form, currentStep }: SelectionStepProps) => {
       )}
 
       {currentStep === 5 && (
-        <GeneratePaper form={form} />
+        <GeneratePaper form={form} onGenApiChange={onGenApiChange} />
       )}
     </>
   );

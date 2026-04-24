@@ -1,77 +1,51 @@
+import { Check } from "lucide-react"
+
 interface StriperProps {
   currentStep: number
   totalSteps: number
 }
 
 const Striper = ({ currentStep, totalSteps }: StriperProps) => {
-  const radius = 45
-  const strokeWidth = 6
-  const circumference = 2 * Math.PI * radius
-  const progress = (currentStep / totalSteps) * circumference
-  const percentage = Math.round((currentStep / totalSteps) * 100)
-
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="relative w-24 h-24 sm:w-32 sm:h-32">
-        {/* Background glow effect */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl" />
+    <div className="w-full flex items-center">
+      {Array.from({ length: totalSteps }).map((_, i) => {
+        const step = i + 1
+        const isCompleted = step < currentStep
+        const isActive = step === currentStep
+        const isLast = step === totalSteps
 
-        <svg className="transform -rotate-90 w-full h-full drop-shadow-lg" viewBox="0 0 100 100">
-          {/* Background circle with subtle gradient */}
-          <defs>
-            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4f46e5" />
-              <stop offset="100%" stopColor="#3b82f6" />
-            </linearGradient>
-          </defs>
+        return (
+          <div
+            key={step}
+            className={`flex items-center ${isLast ? "" : "flex-1"}`}
+          >
+            <div
+              className={`relative flex items-center justify-center rounded-full shrink-0 transition-all duration-300 ${
+                isActive
+                  ? "w-8 h-8 bg-indigo-600 text-white ring-4 ring-indigo-100 shadow-md shadow-indigo-600/20"
+                  : isCompleted
+                    ? "w-7 h-7 bg-indigo-600 text-white"
+                    : "w-7 h-7 bg-white text-slate-400 border-2 border-slate-200"
+              }`}
+            >
+              {isCompleted ? (
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              ) : (
+                <span className="text-xs font-bold">{step}</span>
+              )}
+            </div>
 
-          {/* Base circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            stroke="#e2e8f0"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            className="transition-all duration-300"
-          />
-
-          {/* Progress circle with gradient */}
-          <circle
-            cx="50"
-            cy="50"
-            r={radius}
-            stroke="url(#progressGradient)"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference - progress}
-            strokeLinecap="round"
-            className="transition-all duration-700 ease-out drop-shadow-md"
-          />
-        </svg>
-
-        {/* Center content with improved styling */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-center">
-            <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-              {percentage}%
-            </p>
-            <span className="text-xs sm:text-sm text-slate-500 font-semibold block mt-1">
-              Step {currentStep}/{totalSteps}
-            </span>
+            {!isLast && (
+              <div className="flex-1 h-0.5 mx-1 sm:mx-2 bg-slate-200 relative overflow-hidden rounded-full">
+                <div
+                  className="absolute inset-y-0 left-0 bg-indigo-600 transition-all duration-500 ease-out"
+                  style={{ width: isCompleted ? "100%" : "0%" }}
+                />
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* Progress label below indicator */}
-      <div className="mt-4 text-center">
-        <p className="text-xs sm:text-sm font-medium text-slate-600">
-          {currentStep === totalSteps
-            ? "Ready to generate"
-            : `${totalSteps - currentStep} step${totalSteps - currentStep !== 1 ? "s" : ""} remaining`}
-        </p>
-      </div>
+        )
+      })}
     </div>
   )
 }
